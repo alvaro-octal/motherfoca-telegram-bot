@@ -1,10 +1,8 @@
 import { Context, Telegraf } from 'telegraf';
-
-import { Request, logger, config, https, Response } from 'firebase-functions';
-
-console.log({
-    config: config(),
-});
+import { Request, logger, Response, region, config } from 'firebase-functions';
+import { AbstractCommand } from './commands/abstract.command';
+import { StartCommand } from './commands/start.command';
+import { EspaletCommand } from './commands/espalet.command';
 
 const bot = new Telegraf(config().telegram.token, {
     telegram: {
@@ -12,29 +10,22 @@ const bot = new Telegraf(config().telegram.token, {
     },
 });
 
-// error handling
 bot.catch(async (err, ctx: Context): Promise<void> => {
     logger.error('[Bot] Error', err);
     await ctx.reply(`Encountered an error for ${ctx.updateType}`);
 });
 
-// initialize the commands
-bot.command('/start', (ctx: Context) => ctx.reply('Hello! Send any message and I will copy it.'));
-// copy every message and send to the user
-bot.on('message', (ctx: Context) => {
-    if (!ctx.chat) {
-        throw new Error('No chat provided');
-    } else if (!ctx.message) {
-        throw new Error('No message provided');
-    }
+const commands: AbstractCommand[] = [new StartCommand(), new EspaletCommand()];
 
-    return ctx.telegram.copyMessage(ctx.chat.id, ctx.chat.id, ctx.message.message_id);
-});
+for (const command of commands) {
+    bot.command(`/${command.name}`, (ctx: Context) => command.invoke(ctx));
+}
 
-// handle all telegram updates with HTTPs trigger
-exports.echoBot = https.onRequest(async (request: Request, response: Response): Promise<void> => {
-    logger.log('Incoming message', request.body);
-    await bot.handleUpdate(request.body, response).then(() => {
-        return response.sendStatus(200);
-    });
-});
+exports.webhook = region('europe-west6').https.onRequest(
+    async (request: Request, response: Response): Promise<void> => {
+        logger.log('Incoming message', request.body);
+        await bot.handleUpdate(request.body, response).then(() => {
+            return response.sendStatus(200);
+        });
+    },
+);
