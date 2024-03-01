@@ -6,15 +6,17 @@ export class EspaletCommand extends AbstractCommand {
     async invoke(ctx: Context): Promise<void> {
         await ctx.sendChatAction('upload_photo');
 
+        const now: Date = new Date();
+
         const photos: InputMediaPhoto[] = [
             {
                 type: 'photo',
-                media: 'https://www.espalet.eu/webcams/Frontera_18072/192006597000M.jpg',
+                media: `https://www.espalet.eu/webcams/Frontera_18072/000M.jpg?t=${now.getTime()}`,
                 caption: 'Portalet Francia',
             },
             {
                 type: 'photo',
-                media: 'https://www.espalet.eu/webcams/Frontera_18008/1402785707000M.jpg',
+                media: `https://www.espalet.eu/webcams/Frontera_18008/000M.jpg?t=${now.getTime()}`,
                 caption: 'Portalet España',
             },
         ];
